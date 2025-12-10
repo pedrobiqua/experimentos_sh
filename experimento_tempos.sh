@@ -42,7 +42,8 @@ OUTPUT_DIR="$HOME/output"
 mkdir -p "$DATASETS_DIR"
 mkdir -p "$OUTPUT_DIR"
 
-BANLIST=(pokerhand)
+# airlines.arff covtype.arff poker-lsn.arff tcp-sync.arff aws-spot-pricing-market.arff pklot_512.arff
+BANLIST=(airlines.arff covtype.arff poker-lsn.arff tcp-sync.arff)
 
 ### ============================================
 ### 4. Processar datasets

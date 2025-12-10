@@ -86,12 +86,12 @@ git checkout exp/experiments-balancing || git checkout -b exp/experiments-balanc
 mkdir -p "$SAIDA_DIR" "$IMG_DIR"
 
 # === ATIVA AMBIENTE E INSTALA GDOWN ===
-echo "🔹 Ativando ambiente pedro_env..."
-source ~/anaconda3/etc/profile.d/conda.sh
-conda activate pedro_env
+echo "🔹 Ativando ambiente pbquadros..."
+source /anaconda3/etc/profile.d/conda.sh
+conda activate pedro_base
 
-echo "📦 Verificando gdown..."
-pip install --upgrade gdown
+# echo "📦 Verificando gdown..."
+# pip install --upgrade gdown
 
 # === BAIXA OS DATASETS ===
 declare -A FILES=(
@@ -138,7 +138,7 @@ CP=$(cat cp.txt):target/classes:target/test-classes
 
 # === EXECUÇÃO DO EXPERIMENTO ===
 log "Executando experimento Java..."
-java -Xms2G -Xmx6G -cp "$CP" moa.TestKdTree 0 > "$ARQUIVO_SAIDA"
+java -cp "$CP" moa.TestKdTree 0 > "$ARQUIVO_SAIDA"
 
 log "Experimento concluído!"
 log "Saída CSV: $ARQUIVO_SAIDA"
