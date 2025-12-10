@@ -1,0 +1,2 @@
+// Comando do experimento do tempos
+nohup ./experimento_tempos.sh > saida.log 2>&1 &
