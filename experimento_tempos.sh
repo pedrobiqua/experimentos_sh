@@ -4,7 +4,9 @@ set -e
 ### ============================================
 ### BANLIST DOS DATASETS NÃO USADOS
 ### ============================================
-BANLIST=(airlines aws-spot-pricing-market covtype poker-lsn)
+# OK: airlines aws-spot-pricing-market covtype
+# pklot_512 poker-lsn tcp-sync tcp_sync_sem_timestamp
+BANLIST=(aws-spot-pricing-market pklot_512 tcp-sync) # BLOQUEADOS
 
 ### ============================================
 ### 0. Timestamp
@@ -17,10 +19,7 @@ echo ">> Timestamp: $TS"
 ### ============================================
 NUMA_NODE=0
 
-# Descobre memória total do nó NUMA (em GB)
 NUMA_MEM_GB=$(numactl --hardware | awk "/node $NUMA_NODE size/ {print int(\$4/1024)}")
-
-# Usar no máximo 85% da RAM do nó
 MAX_HEAP_GB=$(( NUMA_MEM_GB * 85 / 100 ))
 
 echo ">> NUMA node $NUMA_NODE com ${NUMA_MEM_GB}GB (heap máx: ${MAX_HEAP_GB}GB)"
@@ -59,7 +58,7 @@ OUTPUT_DIR="$HOME/output"
 mkdir -p "$DATASETS_DIR" "$OUTPUT_DIR"
 
 ### ============================================
-### 5. Processar datasets
+### 5. Processar datasets (sequencial, controlado)
 ### ============================================
 echo ">> Iniciando experimentos..."
 
@@ -79,11 +78,8 @@ for arff in "$DATASETS_DIR"/*.arff; do
     ### Cálculo dinâmico de RAM
     ### ----------------------------------------
     FILE_SIZE_GB=$(du -BG "$arff" | cut -f1 | tr -d 'G')
-
-    # Heurística: 4x o tamanho do dataset
     HEAP_GB=$(( FILE_SIZE_GB * 4 ))
 
-    # Limites
     [ "$HEAP_GB" -lt 4 ] && HEAP_GB=4
     [ "$HEAP_GB" -gt "$MAX_HEAP_GB" ] && HEAP_GB="$MAX_HEAP_GB"
 
@@ -95,11 +91,8 @@ for arff in "$DATASETS_DIR"/*.arff; do
         -s (ArffFileStream -f $arff) \
         -o $OUTPUT_MAIN"
 
-    ### ----------------------------------------
-    ### Execução Java NUMA-aware
-    ### ----------------------------------------
     numactl --cpunodebind=$NUMA_NODE --membind=$NUMA_NODE \
-    java \
+        java \
         -Xms${HEAP_GB}g \
         -Xmx${HEAP_GB}g \
         -XX:+UseG1GC \
