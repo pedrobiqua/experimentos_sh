@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+msg="Uso correto: builtin [comando]"
+
+[[ $# -ne 1 ]] && echo $msg && exit 1
+
+# Executa o help para verificar se vai mostrar ajuda ou não
+# joga a saida independente de sucesso ou falha para o limbo
+# isso se da pelo '&', pegando tanto erros quanto saida
+help $1 &> /dev/null
+
+## usa p '$?' para pegar se funcionou o comando anterior
+test $? -eq 0 && echo "builtin" || echo "n e builtin"
+
+exit 0

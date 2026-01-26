@@ -1,22 +1,26 @@
 #!/bin/bash
 set -e
 
-### ============================================
+### ESSE SCRIPT USA O JAVA 21 COMO PADRÃO
 ### BANLIST DOS DATASETS NÃO USADOS
-### ============================================
 # OK: airlines aws-spot-pricing-market covtype
 # pklot_512 poker-lsn tcp-sync tcp_sync_sem_timestamp
 BANLIST=(aws-spot-pricing-market pklot_512 tcp-sync) # BLOQUEADOS
+# N específico por dataset | USADO NO RAM HOURS
+declare -A DATASET_N=(
+    [airlines]=10000
+    [covtype]=10000
+    [poker-lsn]=10000
+    [tcp_sync_sem_timestamp]=1000
+)
 
-### ============================================
-### 0. Timestamp
-### ============================================
+# valor padrão caso não esteja no dicionário
+DEFAULT_N=1000
+
+
 TS=$(date +"%Y-%m-%d_%H-%M")
 echo ">> Timestamp: $TS"
 
-### ============================================
-### 1. Configuração NUMA
-### ============================================
 NUMA_NODE=0
 
 NUMA_MEM_GB=$(numactl --hardware | awk "/node $NUMA_NODE size/ {print int(\$4/1024)}")
@@ -24,42 +28,30 @@ MAX_HEAP_GB=$(( NUMA_MEM_GB * 85 / 100 ))
 
 echo ">> NUMA node $NUMA_NODE com ${NUMA_MEM_GB}GB (heap máx: ${MAX_HEAP_GB}GB)"
 
-### ============================================
-### 2. Clonar o MOA
-### ============================================
 cd "$HOME"
 
-if [ ! -d "moa" ]; then
-    echo ">> Clonando MOA..."
-    git clone https://github.com/pedrobiqua/moa.git
-else
-    echo ">> MOA já existente"
-fi
+# if [ ! -d "moa" ]; then
+#     echo ">> Clonando MOA..."
+#     git clone https://github.com/pedrobiqua/moa.git
+# else
+#     echo ">> MOA já existente"
+# fi
 
-cd moa
+cd Projetos/moa
 git fetch
 git checkout exp/experiments-balancing
 
-### ============================================
-### 3. Compilar
-### ============================================
 echo ">> Compilando MOA..."
 mvn clean package -DskipTests
 
 JAR_FILE=$(ls moa/target/*.jar | head -n 1)
 echo ">> JAR: $JAR_FILE"
 
-### ============================================
-### 4. Diretórios
-### ============================================
-DATASETS_DIR="$HOME/datasets"
+DATASETS_DIR="$HOME/Datasets"
 OUTPUT_DIR="$HOME/output"
 
 mkdir -p "$DATASETS_DIR" "$OUTPUT_DIR"
 
-### ============================================
-### 5. Processar datasets (sequencial, controlado)
-### ============================================
 echo ">> Iniciando experimentos..."
 
 for arff in "$DATASETS_DIR"/*.arff; do
@@ -73,10 +65,13 @@ for arff in "$DATASETS_DIR"/*.arff; do
     fi
 
     echo ">> Dataset: $base"
+    if [[ -n "${DATASET_N[$base]}" ]]; then
+        N_VALUE=${DATASET_N[$base]}
+    else
+        N_VALUE=$DEFAULT_N
+    fi
 
-    ### ----------------------------------------
-    ### Cálculo dinâmico de RAM
-    ### ----------------------------------------
+    # AQUI FAÇO A SEPARAÇÃO DEFININDO O TAMANHO QUE O JAVA VAI ALOCAR DE MIN E MAX
     FILE_SIZE_GB=$(du -BG "$arff" | cut -f1 | tr -d 'G')
     HEAP_GB=$(( FILE_SIZE_GB * 4 ))
 
@@ -89,14 +84,18 @@ for arff in "$DATASETS_DIR"/*.arff; do
 
     TASK="ExperimentoTempos \
         -s (ArffFileStream -f $arff) \
+        -n $N_VALUE \
         -o $OUTPUT_MAIN"
 
+    # CONFIGURAÇÃO APLICADA DO NUMA E PARAMETROS DO JAVA
     numactl --cpunodebind=$NUMA_NODE --membind=$NUMA_NODE \
         java \
         -Xms${HEAP_GB}g \
         -Xmx${HEAP_GB}g \
-        -XX:+UseG1GC \
+        -XX:+UseParallelGC \
         -XX:+AlwaysPreTouch \
+        -XX:MetaspaceSize=1g \
+        -XX:MaxMetaspaceSize=2g \
         -XX:+UseNUMA \
         -cp "$JAR_FILE" \
         moa.DoTask "$TASK"
