@@ -10,14 +10,15 @@ TIMESTAMP=$(date +"%Y-%m-%d_%H-%M")
 OUTPUT_DIR="$HOME/Output/$TIMESTAMP"
 mkdir -p $OUTPUT_DIR
 TASK="ExperimentosKDtreeMOA \
-    -o $OUTPUT_DIR/Agrawal.csv \
+    -o $OUTPUT_DIR/AgrawalNotebookGCSerial.csv \
     "
-NUMA_NODE=1
+NUMA_NODE=0
 
 ### Pegando do meu repositorio local
 # cd /home/pedro/projects/moa
 
 ### Pegando do GIT
+cd "$HOME"
 if [ ! -d "moa" ]; then
     echo ">> Clonando MOA..."
     git clone https://github.com/pedrobiqua/moa.git
@@ -40,6 +41,7 @@ echo ">> Iniciando experimentos..."
 # CONFIGURAÇÃO APLICADA DO NUMA E PARAMETROS DO JAVA
 numactl --cpunodebind=$NUMA_NODE --membind=$NUMA_NODE \
     java \
+    -XX:+UseSerialGC \
     -cp "$JAR_FILE" \
     moa.DoTask "$TASK"
 
