@@ -42,6 +42,9 @@ echo ">> Iniciando experimentos..."
 numactl --cpunodebind=$NUMA_NODE --membind=$NUMA_NODE \
     java \
     -XX:+UseSerialGC \
+    -Xms8g \
+    -Xmx8g \
+    -Xlog:gc* \
     -cp "$JAR_FILE" \
     moa.DoTask "$TASK"
 
