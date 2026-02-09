@@ -10,7 +10,7 @@ TIMESTAMP=$(date +"%Y-%m-%d_%H-%M")
 OUTPUT_DIR="$HOME/Output/$TIMESTAMP"
 mkdir -p $OUTPUT_DIR
 TASK="ExperimentosKDtreeMOA \
-    -o $OUTPUT_DIR/AgrawalNotebookGCSerial.csv \
+    -o $OUTPUT_DIR/AgrawalServidorGCParallel2gHeap.csv \
     "
 NUMA_NODE=0
 
@@ -39,14 +39,39 @@ echo ">> JAR: $JAR_FILE"
 echo ">> Iniciando experimentos..."
 
 # CONFIGURAÇÃO APLICADA DO NUMA E PARAMETROS DO JAVA
+#### PARAMETROS USADOS NO NOTEBOOK
+# numactl --cpunodebind=$NUMA_NODE --membind=$NUMA_NODE \
+#     java \
+#     -XX:+UseSerialGC \
+#     -cp "$JAR_FILE" \
+#     moa.DoTask "$TASK"
+
+### OPÇÃO 2
 numactl --cpunodebind=$NUMA_NODE --membind=$NUMA_NODE \
     java \
-    -XX:+UseSerialGC \
-    -Xms8g \
-    -Xmx8g \
-    -Xlog:gc* \
+    -XX:+UseParallelGC \
+    -Xms2g \
+    -Xmx2g \
     -cp "$JAR_FILE" \
     moa.DoTask "$TASK"
+
+
+### OPÇÃO 3
+# numactl --cpunodebind=$NUMA_NODE --membind=$NUMA_NODE \
+#     java \
+#     -Xms2g \
+#     -Xmx2g \
+#     -cp "$JAR_FILE" \
+#     moa.DoTask "$TASK"
+
+### OPÇÃO 4
+# java \
+#     --XX:+UseNUMA \
+#     -Xms2g \
+#     -Xmx2g \
+#     -cp "$JAR_FILE" \
+#     moa.DoTask "$TASK"
+
 
 exit 0
 
