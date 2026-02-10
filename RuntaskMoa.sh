@@ -10,7 +10,7 @@ TIMESTAMP=$(date +"%Y-%m-%d_%H-%M")
 OUTPUT_DIR="$HOME/Output/$TIMESTAMP"
 mkdir -p $OUTPUT_DIR
 TASK="ExperimentosKDtreeMOA \
-    -o $OUTPUT_DIR/AgrawalServerGC1.csv \
+    -o $OUTPUT_DIR/AgrawalNotebookSerialGCDefaultHeap.csv \
     "
 NUMA_NODE=0
 
@@ -65,13 +65,18 @@ echo ">> Iniciando experimentos..."
 #     -cp "$JAR_FILE" \
 #     moa.DoTask "$TASK"
 
-numactl --cpunodebind=$NUMA_NODE --membind=$NUMA_NODE \
-    java \
-    -XX:+UseNUMA \
-    -XX:+UseZGC \
+# numactl --cpunodebind=$NUMA_NODE --membind=$NUMA_NODE \
+#     java \
+#     -Xmx2g \
+#     -Xlog:gc \
+#     -XshowSettings:vm \
+#     -cp "$JAR_FILE" \
+#     moa.DoTask "$TASK"
+
+java \
+    -Xms2g \
     -Xmx2g \
-    -Xlog:gc \
-    -XshowSettings:vm \
+    -XX:+UseSerialGC \
     -cp "$JAR_FILE" \
     moa.DoTask "$TASK"
 
