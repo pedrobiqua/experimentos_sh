@@ -9,9 +9,6 @@
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M")
 OUTPUT_DIR="$HOME/Output/$TIMESTAMP"
 mkdir -p $OUTPUT_DIR
-TASK="ExperimentosKDtreeMOA \
-    -o $OUTPUT_DIR/AgrawalNotebookSerialGCDefaultHeap.csv \
-    "
 NUMA_NODE=0
 
 ### Pegando do meu repositorio local
@@ -30,72 +27,26 @@ cd moa
 git fetch
 git checkout exp/experiments-balancing
 
-## Compilar
-echo ">> Compilando MOA..."
-mvn clean package -DskipTests
+count=`ls -1 moa/target/*.jar 2>/dev/null | wc -l`
+if [ ! $count != 0 ]; then
+    ## Compilar
+    echo ">> Compilando MOA..."
+    mvn clean package -DskipTests
+fi
+
 
 JAR_FILE=$(ls moa/target/*.jar | head -n 1)
 echo ">> JAR: $JAR_FILE"
 echo ">> Iniciando experimentos..."
 
-# CONFIGURAÇÃO APLICADA DO NUMA E PARAMETROS DO JAVA
-### DICA
-##     -Xlog:gc* # Mostra o log do gc
-#### PARAMETROS USADOS NO NOTEBOOK
-# numactl --cpunodebind=$NUMA_NODE --membind=$NUMA_NODE \
-#     java \
-#     -XX:+UseSerialGC \
-#     -cp "$JAR_FILE" \
-#     moa.DoTask "$TASK"
+TASK="ExperimentosKDtreeMOA \
+    -o $OUTPUT_DIR/STAGGERG1GComJITAquecendoServer.csv \
+    "
 
-### OPÇÃO 2
-# numactl --cpunodebind=$NUMA_NODE --membind=$NUMA_NODE \
-#     java \
-#     -XX:+UseParallelGC \
-#     -Xms2g \
-#     -Xmx2g \
-#     -cp "$JAR_FILE" \
-#     moa.DoTask "$TASK"
-
-# numactl --cpunodebind=$NUMA_NODE --membind=$NUMA_NODE \
-#     java \
-#     -XX:+UseSerialGC \
-#     -Xms2g \
-#     -Xmx2g \
-#     -cp "$JAR_FILE" \
-#     moa.DoTask "$TASK"
-
-# numactl --cpunodebind=$NUMA_NODE --membind=$NUMA_NODE \
-#     java \
-#     -Xmx2g \
-#     -Xlog:gc \
-#     -XshowSettings:vm \
-#     -cp "$JAR_FILE" \
-#     moa.DoTask "$TASK"
-
-java \
-    -Xms2g \
-    -Xmx2g \
-    -XX:+UseSerialGC \
+numactl --cpunodebind=$NUMA_NODE --membind=$NUMA_NODE \
+    java \
     -cp "$JAR_FILE" \
     moa.DoTask "$TASK"
-
-### OPÇÃO 3
-# numactl --cpunodebind=$NUMA_NODE --membind=$NUMA_NODE \
-#     java \
-#     -Xms2g \
-#     -Xmx2g \
-#     -cp "$JAR_FILE" \
-#     moa.DoTask "$TASK"
-
-### OPÇÃO 4
-# java \
-#     --XX:+UseNUMA \
-#     -Xms2g \
-#     -Xmx2g \
-#     -cp "$JAR_FILE" \
-#     moa.DoTask "$TASK"
-
 
 exit 0
 
